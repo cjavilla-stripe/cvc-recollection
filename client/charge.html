@@ -1,0 +1,69 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <title></title>
+    <link href="https://stripe-samples.github.io/developer-office-hours/demo.css" rel="stylesheet" type="text/css">
+    <script src="https://js.stripe.com/v3/"></script>
+  </head>
+  <body>
+    <div id="main">
+      <div id="container">
+        <div id="panel">
+          <h1>Charge</h1>
+
+          CVC:
+          <div id="cvc-element"></div>
+
+          <button type="submit" id="btn">Pay $5</button>
+        </div>
+      </div>
+    </div>
+    <script charset="utf-8">
+      // Step 1. Create payment intent
+      var params = new URLSearchParams(window.location.search);
+      var customer = params.get('cus');
+      let pm = params.get('pm');
+      let clientSecret;
+      fetch('/payment_intents', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          customer: customer
+        }),
+      })
+      .then((response) => response.json())
+      .then((data) => {
+        clientSecret = data.client_secret;
+      })
+      .catch((error) => {
+        console.error('Error:', error);
+      });
+
+
+      var stripe = Stripe('pk_test_vAZ3gh1LcuM7fW4rKNvqafgB00DR9RKOjN');
+
+      var elements = stripe.elements();
+      var cvcElement = elements.create('cardCvc');
+      cvcElement.mount('#cvc-element');
+
+      const btn = document.querySelector('#btn');
+      btn.addEventListener('click', function(e) {
+        e.preventDefault();
+        // Step 2. Confirm card payment.
+        stripe.confirmCardPayment(clientSecret, {
+          payment_method: pm,
+          payment_method_options: {
+            card: {
+              cvc: cvcElement,
+            },
+          }
+        }).then((resp) => {
+          console.log(resp);
+        });
+      });
+    </script>
+  </body>
+</html>

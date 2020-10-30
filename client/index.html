@@ -1,0 +1,80 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <title>Stripe Payment Page Sample</title>
+    <link href="https://stripe-samples.github.io/developer-office-hours/demo.css" rel="stylesheet" type="text/css">
+    <script src="https://js.stripe.com/v3/"></script>
+  </head>
+  <body>
+    <div id="main">
+      <div id="container">
+        <div id="panel">
+          <h1>Collect card details</h1>
+
+          <div id="card-element">
+          </div>
+
+          <button type="submit" id="btn">Save card</button>
+
+        </div>
+      </div>
+    </div>
+    <script charset="utf-8">
+      // Step 1. Create a SetupIntent on the server.
+      let clientSecret;
+      fetch('/setup_intents', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+        }),
+      })
+      .then((response) => response.json())
+      .then((data) => {
+        clientSecret = data.client_secret;
+      })
+      .catch((error) => {
+        console.error('Error:', error);
+      });
+
+      // Step 2. Confirm SetupIntent on the client.
+      var stripe = Stripe('pk_test_vAZ3gh1LcuM7fW4rKNvqafgB00DR9RKOjN');
+      var elements = stripe.elements();
+      var cardElement = elements.create('card');
+      cardElement.mount('#card-element');
+      const btn = document.querySelector('#btn');
+      btn.addEventListener('click', function(e) {
+        e.preventDefault();
+        stripe.confirmCardSetup(clientSecret, {
+          payment_method: {
+            card: cardElement,
+          },
+        }).then((data) => {
+          if(data.errors) {
+            alert(data.errors);
+          } else {
+            // Step 3. Attach resulting payment method to a new customer.
+            fetch('/customers', {
+              method: 'POST',
+              headers: {
+                'Content-Type': 'application/json',
+              },
+              body: JSON.stringify({
+                payment_method: data.setupIntent.payment_method,
+              }),
+            })
+            .then((response) => response.json())
+            .then((resp) => {
+              window.location.href = `charge.html?pm=${data.setupIntent.payment_method}&cus=${resp.id}`
+            })
+            .catch((error) => {
+              console.error('Error:', error);
+            });
+          }
+        });
+      });
+    </script>
+  </body>
+</html>
